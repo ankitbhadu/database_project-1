@@ -9,30 +9,34 @@
 <body>
   <h1>Welcome <?php echo $_SESSION['admin_id']; ?></h1>
 <form class="" action="" method="post" id="i_form">
-    <label for="train_no">train_no</label><br>
-    <input type="text" id="train_no" name="train_no"><br>
-    <label for="DOJ">DOJ</label><br>
-    <input type="text" id="DOJ" name="DOJ"><br>
-    <label for="sleeper_seats_capacity">sleeper_seats_capacity</label><br>
-    <input type="text" id="sleeper_seats_capacity" name="sleeper_seats_capacity"><br>
-    <label for="AC_seats_capacity">AC_seats_capacity</label><br>
-    <input type="text" id="AC_seats_capacity" name="AC_seats_capacity"><br>
-
     <?php
-    if($_SERVER["REQUEST_METHOD"] == "POST") {
-      $arr=array($_POST['train_no'],
-      $_POST['DOJ'],
-      $_SESSION['admin_id'],
-      $_POST['sleeper_seats_capacity'],
-      $_POST['AC_seats_capacity'],
-      $_POST['sleeper_seats_capacity'],
-      $_POST['AC_seats_capacity']);
-      echo $arr[0],$arr[1],$arr[2];
-      $result = pg_query_params('Select Release_Train($1, $2, $3, $4,$5,$6,$7);',$arr)
+    if($_SERVER["REQUEST_METHOD"] == "POST"){
+    $pnr = pg_query_params('Select book_pnr($1, $2, $3, $4,$5);',array(
+      $_SESSION['train_no'],
+      $_SESSION['coach_type'],
+      $_SESSION['DOJ'],
+      $_SESSION['t_no'],
+      $_SESSION['admin_id']
+    ))
 
+            or die('Unable to CALL stored procedure: ' . pg_last_error());
+    for ($i=1; $i < $_SESSION['t_no']; $i++) {
+      $pid = pg_query_params('Select add_psngr($1, $2, $3);',array(
+        $_POST["name$i"],
+        $_POST["DOB$i"],
+        $_POST["gender$i"],
+      ))
               or die('Unable to CALL stored procedure: ' . pg_last_error());
-
+      $result = pg_query_params('Select book_ticket($1, $2, $3,$4,$5);',array(
+        $pid,
+        $pnr,
+        $_SESSION['train_no'],
+        $_SESSION['DOJ'],
+        $_SESSION['coach_type']
+      ))
+              or die('Unable to CALL stored procedure: ' . pg_last_error());
     }
+}
     ?>
     <script type="text/javascript">
     document.body.onload = addElement;
@@ -41,14 +45,23 @@
       // console.log($_SESSION['t_no']);
       var p = document.getElementById('i_form');
       var t_no = '<?php echo $_SESSION["t_no"]; ?>';
-      // for(var i=0;i<t_no;i++){
-      //   var newElement = document.createElement('button');
-      //   var linebreak=document.createElement('br')
-      //   newElement.setAttribute('id', 'b'+toString(i));
-      //   newElement.innerHTML = 'hello';
-      //   p.appendChild(newElement);
-      //   p.appendChild(linebreak);
-      // }
+      for(var i=0;i<t_no;i++){
+        var newheading=document.createElement('h3');
+        var newdivision=document.createElement('div');
+        // var newElement = document.createElement('button');
+        var linebreak=document.createElement('br')
+        newheading.innerHTML='Person '+String(i+1)+':';
+        newheading.setAttribute('id', 'head'+String(i+1));
+        newdivision.innerHTML='<label for=\"name\">name</label><br><input type=\"text\" id=\"name'+String(i+1)+'\" name=\"name\"><br><label for=\"DOB\">DOB</label><br><input type=\"text\" id=\"DOB'+String(i+1)+'\" name=\"DOB\"><br><label for=\"gender\">gender</label><br><input type=\"text\" id=\"gender'+String(i+1)+'\" name=\"gender\"><br>';
+        console.log(newdivision.innerHTML);
+        p.appendChild(newheading);
+        p.appendChild(newdivision);
+        p.appendChild(linebreak);
+      }
+      var submit=document.createElement('input');
+      submit.setAttribute('type',"submit");
+      submit.setAttribute('value',"Book Ticket");
+      p.appendChild(submit);
       }
       function clear(){
         document.getElementById('train_no')='';
