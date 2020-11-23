@@ -62,10 +62,11 @@
                <form action = "" method = "post">
                   <label>admin_id  :</label><input type = "text" name = "admin_id" class = "box"/><br /><br />
                   <label>Password  :</label><input type = "password" name = "password" class = "box" /><br/><br />
-                  <input type = "submit" value = " Submit "/><br />
+                  <input type = "submit" value = " Submit "/>
+                  <button type="button" name="button" onclick="window.history.back()">Back</button>
+
                </form>
                <div style = "font-size:11px; color:#cc0000; margin-top:10px"><?php echo $error; ?></div>
-               <h2><a href = "../index.php">Back</a></h2>
             </div>
 
          </div>
