@@ -28,7 +28,7 @@
       $_SESSION['DOJ']=$_POST['DOJ'];
       $_SESSION['t_no']=$_POST['t_no'];
       $_SESSION['coach_type']=$_POST['coach_type'];
-      $result = pg_query_params('Select book_pnr($1, $2, $3, $4);',array(
+      $result = pg_query_params('Select check_availability($1, $2, $3, $4);',array(
         $_SESSION['train_no'],
         $_SESSION['coach_type'],
         $_SESSION['DOJ'],
@@ -36,6 +36,11 @@
       ))
               or die('Unable to CALL stored procedure: ' . pg_last_error());
               //add condition here
+      $row=pg_fetch_row($result);
+      if($row[0]==0){
+        echo '<script>alert("train not available")</script>';
+        die();
+      }
       header("location: book_ticket.php");
       // $_POST['DOJ'],
       // $_SESSION['admin_id'],

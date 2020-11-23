@@ -11,31 +11,33 @@
 <form class="" action="" method="post" id="i_form">
     <?php
     if($_SERVER["REQUEST_METHOD"] == "POST"){
-    $pnr = pg_query_params('Select book_pnr($1, $2, $3, $4,$5);',array(
+    $result = pg_query_params('Select book_pnr($1, $2, $3, $4,$5);',array(
       $_SESSION['train_no'],
       $_SESSION['coach_type'],
       $_SESSION['DOJ'],
       $_SESSION['t_no'],
       $_SESSION['admin_id']
     ))
-
             or die('Unable to CALL stored procedure: ' . pg_last_error());
-    for ($i=1; $i < $_SESSION['t_no']; $i++) {
-      $pid = pg_query_params('Select add_psngr($1, $2, $3);',array(
-        $_POST["name$i"],
-        $_POST["DOB$i"],
-        $_POST["gender$i"],
-      ))
-              or die('Unable to CALL stored procedure: ' . pg_last_error());
-      $result = pg_query_params('Select book_ticket($1, $2, $3,$4,$5);',array(
-        $pid,
-        $pnr,
-        $_SESSION['train_no'],
-        $_SESSION['DOJ'],
-        $_SESSION['coach_type']
-      ))
-              or die('Unable to CALL stored procedure: ' . pg_last_error());
-    }
+    $pnr=pg_fetch_row($result);
+    echo $pnr[0];
+    // for ($i=1; $i <=$_SESSION['t_no']; $i++) {
+    //   $result = pg_query_params('Select add_psngr($1, $2, $3);',array(
+    //     $_POST["name$i"],
+    //     $_POST["DOB$i"],
+    //     $_POST["gender$i"],
+    //   ))
+    //           or die('Unable to CALL stored procedure: ' . pg_last_error());
+    //   $pid=pg_fetch_row($result);
+    //   $result = pg_query_params('Select book_ticket($1, $2, $3,$4,$5);',array(
+    //     $pid[0],
+    //     $pnr[0],
+    //     $_SESSION['train_no'],
+    //     $_SESSION['DOJ'],
+    //     $_SESSION['coach_type']
+    //   ))
+    //           or die('Unable to CALL stored procedure: ' . pg_last_error());
+    // }
 }
     ?>
     <script type="text/javascript">
