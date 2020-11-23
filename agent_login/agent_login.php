@@ -1,13 +1,13 @@
 <?php
   include('../config.php');
   session_start();
-  // $sql="select * from admin";
+  // $sql="select * from agent";
    // $result = pg_query($sql);
    $error="";
    if($_SERVER["REQUEST_METHOD"] == "POST") {
-      $myadmin_id = $_POST['admin_id'];
+      $myagent_id = $_POST['agent_id'];
       $mypassword = $_POST['password'];
-      $sql = "SELECT * FROM admin WHERE admin_id = '$myadmin_id' and password = '$mypassword'";
+      $sql = "SELECT * FROM agent WHERE agent_id = '$myagent_id' and password = '$mypassword'";
       $result = pg_query($db,$sql);
       if (!$result) {
         echo "An error occurred.\n";
@@ -15,10 +15,10 @@
       }
       $row = pg_fetch_row($result);
       $count = pg_num_rows($result);
-      // If result matched $myadmin_id and $mypassword, table row must be 1 row
+      // If result matched $myagent_id and $mypassword, table row must be 1 row
       if($count == 1) {
-         $_SESSION['admin_id'] = $myadmin_id;
-         echo $myadmin_id;
+         $_SESSION['agent_id'] = $myagent_id;
+         echo $myagent_id;
          header("location: welcome.php");
       }else {
          $error = "Your Login Name or Password is invalid";
@@ -60,7 +60,7 @@
             <div style = "margin:30px">
 
                <form action = "" method = "post">
-                  <label>admin_id  :</label><input type = "text" name = "admin_id" class = "box"/><br /><br />
+                  <label>agent_id  :</label><input type = "text" name = "agent_id" class = "box"/><br /><br />
                   <label>Password  :</label><input type = "password" name = "password" class = "box" /><br/><br />
 
                   <input type = "submit" value = " Submit "/><br />

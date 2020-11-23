@@ -1,7 +1,7 @@
 <?php
    $host        = "host = 127.0.0.1";
    $port        = "port = 5432";
-   $dbname      = "dbname = Train_database";
+   $dbname      = "dbname = database_project";
    $credentials = "user = postgres password=newpassword";
 
    $db = pg_connect( "$host $port $dbname $credentials"  );

@@ -7,7 +7,7 @@
   <title>Welcome </title>
 </head>
 <body>
-  <h1>Welcome <?php echo $_SESSION['admin_id']; ?></h1>
+  <h1>Welcome <?php echo $_SESSION['agent_id']; ?></h1>
 <form class="" action="" method="post">
   <label for="train_no">train_no</label><br>
   <input type="text" id="train_no" name="train_no"><br>
@@ -43,7 +43,7 @@
       }
       header("location: book_ticket.php");
       // $_POST['DOJ'],
-      // $_SESSION['admin_id'],
+      // $_SESSION['agent_id'],
       // $_POST['sleeper_seats_capacity'],
       // $_POST['AC_seats_capacity'],
       // $_POST['sleeper_seats_capacity'],
