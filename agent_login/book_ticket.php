@@ -24,7 +24,7 @@
         newheading.innerHTML='Person '+String(i+1)+':';
         newheading.setAttribute('id', 'head'+String(i+1));
         newdivision.innerHTML='<label for=\"name\">name</label><br><input type=\"text\" id=\"name'+String(i+1)+'\" name=\"name'+String(i+1)+'\"><br><label for=\"DOB\">DOB</label><br><input type=\"text\" id=\"DOB'+String(i+1)+'\" name=\"DOB'+String(i+1)+'\"><br><label for=\"gender\">gender</label><br><input type=\"text\" id=\"gender'+String(i+1)+'\"name=\"gender'+String(i+1)+'\"><br>';
-        console.log(newdivision.innerHTML);
+        // console.log(newdivision.innerHTML);
         p.appendChild(newheading);
         p.appendChild(newdivision);
         p.appendChild(linebreak);
@@ -53,7 +53,7 @@
   ))
           or die('Unable to CALL stored procedure: ' . pg_last_error());
   $pnr=pg_fetch_row($result);
-  // echo $pnr[0].'\n';
+  echo $pnr[0].'\n';
   for ($i=1; $i <=$_SESSION['t_no']; $i++) {
     $result = pg_query_params('Select add_psngr($1, $2, $3);',array(
       $_POST["name".$i],
