@@ -18,7 +18,7 @@
       // If result matched $myadmin_id and $mypassword, table row must be 1 row
       if($count == 1) {
          $_SESSION['admin_id'] = $myadmin_id;
-         echo $myadmin_id;
+           echo '<script>alert("Logged in successfully!")</script>';
          header("location: welcome.php");
       }else {
          $error = "Your Login Name or Password is invalid";

@@ -145,7 +145,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
               array($_POST['train_no'],$_POST['source_id'],$_POST['destination_id'],$_POST['coaches_capacity']))
 
             or die('Unable to CALL stored procedure: ' . pg_last_error());
-    echo 'train_added successfully.';
+            echo '<script>alert("Train added successfully")</script>';
+      header('location: welcome.php');
 }
 ?>
 </body>

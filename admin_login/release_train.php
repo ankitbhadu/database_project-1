@@ -86,9 +86,9 @@
     </li>
   </ul>
 </nav>
+<div class="formcontainer">
 <form method="post">
   <h1>Release train</h1>
-  <div class="formcontainer">
   <div class="container">
   <span style="padding-bottom:2000px"></span>
     <label for="train_no"><strong>train_no</strong></label>
@@ -101,7 +101,6 @@
     <input type="text" placeholder="AC_seats_capacity" name="AC_seats_capacity" required>
     <div style = "font-size:14px; color:#cc0000; margin-top:10px"></div>
   </div>
-  <button type="submit" value="submit" onclick="clear()">Login</button>
   <script type="text/javascript">
     function clear(){
       document.getElementById('train_no')='';
@@ -110,9 +109,10 @@
       document.getElementById('coaches_capacity')='';
     }
   </script>
-<button onclick="window.location.href='welcome.php">Go Back</button>
-</div>
+  <button type="submit" value="submit" onclick="clear()">Release Train</button>
 </form>
+<button onclick="window.location.href='welcome.php'">Go Back</button>
+</div>
 <?php
 function checkIsAValidDate($myDateString){
   return (bool)strtotime($myDateString);
@@ -142,7 +142,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST") {
     echo '<script>alert("Train does not exist in database!!! First add train")</script>';
     die();
   }
-  echo "Train successfully released";
+  echo '<script>alert("Train added successfully");</script>';
 }
 ?>
 </body>
