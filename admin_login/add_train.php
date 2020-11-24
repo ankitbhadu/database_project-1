@@ -113,12 +113,8 @@
       document.getElementById('coaches_capacity')='';
     }
   </script>
-<button onclick="goBack()">Go Back</button>
+<button onclick="window.location.href=''">Go Back</button>
 </div>
-<script>
-function goBack() {
-  window.history.back();
-}
 </script>
 </form>
 <?php

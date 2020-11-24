@@ -76,18 +76,12 @@
   <h2 class="navbar-brand">Welcome, <?php echo $_SESSION['agent_id']; ?></h2>
   <ul class="navbar-nav ml-auto">
     <li class="nav-item">
-      <a class="nav-link" href="./add_train.php">Add Train</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="'./release_train.php">Release Train</a>
-    </li>
-    <li class="nav-item">
       <a class="nav-link" href="logout.php">Logout</a>
     </li>
   </ul>
 </nav>
 <form method="post">
-  <h1>agent Login</h1>
+  <h1>Journey details</h1>
   <div class="formcontainer">
   <div class="container">
   <span style="padding-bottom:2000px"></span>
@@ -110,13 +104,9 @@
       document.getElementById('coaches_capacity')='';
     }
   </script>
-<button onclick="goBack()">Go Back</button>
+<button onclick="window.location.href='welcome.php'">Go Back</button>
 </div>
 <script>
-function goBack() {
-  window.history.back();
-}
-</script>
 </form>
 <?php
 if($_SERVER["REQUEST_METHOD"] == "POST") {

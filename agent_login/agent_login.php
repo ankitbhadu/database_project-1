@@ -103,12 +103,6 @@
       </div>
       <button type="submit" value="submit">Login</button>
     </form>
-    <button onclick="goBack()">Go Back</button>
-
-    <script>
-    function goBack() {
-      window.history.back();
-    }
-    </script>
+    <button onclick="window.location.href='../index.php'">Go Back</button>
   </body>
 </html>

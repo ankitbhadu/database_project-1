@@ -1,20 +1,6 @@
 <?php
    include('session.php');
 ?>
-
-
-
-
-
-
-
-
-
-
-
-<?php
-   include('session.php');
-?>
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
@@ -90,17 +76,12 @@
   <h2 class="navbar-brand">Welcome, <?php echo $_SESSION['agent_id']; ?></h2>
   <ul class="navbar-nav ml-auto">
     <li class="nav-item">
-      <a class="nav-link" href="./add_train.php">Add Train</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="'./release_train.php">Release Train</a>
-    </li>
-    <li class="nav-item">
       <a class="nav-link" href="logout.php">Logout</a>
     </li>
   </ul>
 </nav>
-<form method="post">
+<div class="formcontainer">
+<form method="post" id="i_form">
 <script type="text/javascript">
 document.body.onload = addElement;
   function addElement() {
@@ -112,29 +93,24 @@ document.body.onload = addElement;
     var newheading=document.createElement('h3');
     var newdivision=document.createElement('div');
     // var newElement = document.createElement('button');
-    var linebreak=document.createElement('br')
+    var linebreak=document.createElement('br');
     newheading.innerHTML='Person '+String(i)+':';
-    newheading.setAttribute('id', 'head'+String(i));
+    /* newheading.setAttribute('id', 'head'+String(i)); */
     newdivision.innerHTML=`<div class='formcontainer'>
     <div class='container'>
     <label for='name'><strong>name</strong></label>
     <input type='text' placeholder='name' name='name${i}' required>
-    <label for='DOB$i'><strong>DOB</strong></label>
+    <label for='DOB'><strong>DOB</strong></label>
     <input type='text' placeholder='DOB' name='DOB${i}' required>
-    <label for='gender$i'><strong>gender</strong></label>
+    <label for='gender'><strong>gender</strong></label>
     <input type='text' placeholder='gender' name='gender${i}' required>
     </div>
-    <button type='submit' value='submit' onclick='clear()'>Login</button>
-    </div>`;
+    <button type='submit' value='submit' onclick='clear()'>Book ticket</button>`;
     // console.log(newdivision.innerHTML);
     p.appendChild(newheading);
     p.appendChild(newdivision);
     p.appendChild(linebreak);
   }
-  var submit=document.createElement('input');
-  submit.setAttribute('type',"submit");
-  submit.setAttribute('value',"Book Ticket");
-  p.appendChild(submit);
   }
   function clear(){
     document.getElementById('train_no')='';
@@ -144,6 +120,8 @@ document.body.onload = addElement;
   }
 </script>
 </form>
+<button type='' value='back' onclick="window.location.href='number_of_tickets.php'">Back</button>
+</div>
 <?php
 if($_SERVER["REQUEST_METHOD"] == "POST"){
 $result = pg_query_params('Select book_pnr($1, $2, $3, $4,$5);',array(
@@ -155,7 +133,7 @@ $result = pg_query_params('Select book_pnr($1, $2, $3, $4,$5);',array(
 ))
         or die('Unable to CALL stored procedure: ' . pg_last_error());
 $pnr=pg_fetch_row($result);
-echo $pnr[0].'\n';
+// echo $pnr[0].'\n';
 for ($i=1; $i <=$_SESSION['t_no']; $i++) {
   $result = pg_query_params('Select add_psngr($1, $2, $3);',array(
     $_POST["name".$i],
@@ -164,7 +142,7 @@ for ($i=1; $i <=$_SESSION['t_no']; $i++) {
   ))
           or die('Unable to CALL stored procedure: ' . pg_last_error());
   $pid=pg_fetch_row($result);
-  echo $pid[0];
+  // echo $pid[0];
   $result = pg_query_params('Select book_ticket($1, $2, $3,$4,$5);',array(
     $pid[0],
     $pnr[0],
