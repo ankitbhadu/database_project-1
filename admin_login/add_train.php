@@ -21,9 +21,6 @@
     form {
     border: 5px solid #f1f1f1;
     margin-top: 60px;
-    left: 50%;
-    right:50%;
-    position: absolute;
     }
     input[type=text], input[type=password] {
     width: 100%;
@@ -82,7 +79,7 @@
       <a class="nav-link" href="./add_train.php">Add Train</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" href="'./release_train.php">Release Train</a>
+      <a class="nav-link" href="./release_train.php">Release Train</a>
     </li>
     <li class="nav-item">
       <a class="nav-link" href="logout.php">Logout</a>
@@ -113,9 +110,8 @@
       document.getElementById('coaches_capacity')='';
     }
   </script>
-<button onclick="window.location.href=''">Go Back</button>
+<button onclick="window.location.href='welcome.php'">Go Back</button>
 </div>
-</script>
 </form>
 <?php
 if($_SERVER["REQUEST_METHOD"] == "POST") {

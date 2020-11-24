@@ -1,38 +1,32 @@
 <?php
   include('../config.php');
   session_start();
-  // $sql="select * from admin";
+  // $sql="select * from agent";
    // $result = pg_query($sql);
    $error="";
    if($_SERVER["REQUEST_METHOD"] == "POST") {
-      $myadmin_id = $_POST['admin_id'];
+      $myagent_id = $_POST['agent_id'];
       $mypassword = $_POST['password'];
-      $sql = "SELECT * FROM admin WHERE admin_id = '$myadmin_id' and password = '$mypassword'";
+      $name=$_POST['name'];
+      $cc_no=$_POST['cc_no'];
+      $sql = "insert into agent values('$myagent_id','$mypassword');";
       $result = pg_query($db,$sql);
       if (!$result) {
         echo "An error occurred.\n";
         exit;
       }
-      $row = pg_fetch_row($result);
-      $count = pg_num_rows($result);
-      // If result matched $myadmin_id and $mypassword, table row must be 1 row
-      if($count == 1) {
-         $_SESSION['admin_id'] = $myadmin_id;
-         echo $myadmin_id;
-         header("location: welcome.php");
-      }else {
-         $error = "Your Login Name or Password is invalid";
+      $sql = "insert into booking_agent values('$myagent_id','$name','$cc_no','$mypassword');";
+      $result = pg_query($db,$sql);
+      if (!$result) {
+        echo "An error occurred.\n";
+        exit;
       }
    }
-   // while ($row = pg_fetch_row($result)) {
-   //   echo "$row[0] $row[1]";
-   //   echo "<br />\n";
-   // }
 ?>
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Admin login</title>
+    <title>Agent Registration form</title>
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet">
     <style>
       html, body {
@@ -91,19 +85,22 @@
   </head>
   <body>
     <form method="post">
-      <h1>Admin Login</h1>
+      <h1>Agent Registration</h1>
       <div class="formcontainer">
       <hr/>
       <div class="container">
         <label for="uname"><strong>Username</strong></label>
-        <input type="text" placeholder="Enter Username" name="admin_id" required>
+        <input type="text" placeholder="Enter Username" name="agent_id" required>
+        <label for="name"><strong>Name</strong></label>
+        <input type="text" placeholder="Enter name" name="name" required>
+        <label for="cc_no"><strong>cc_no</strong></label>
+        <input type="text" placeholder="Enter credit card number" name="cc_no" required>
         <label for="psw"><strong>Password</strong></label>
         <input type="password" placeholder="Enter Password" name="password" required>
         <div style = "font-size:14px; color:#cc0000; margin-top:10px"><?php echo $error; ?></div>
       </div>
-      <button type="submit" value="submit">Login</button>
+      <button type="submit" value="submit">Register</button>
     </form>
     <button onclick="window.location.href='../index.php'">Go Back</button>
-
   </body>
 </html>

@@ -88,11 +88,11 @@
     <label for="train_no"><strong>train_no</strong></label>
     <input type="text" placeholder="train_no" name="train_no" required>
     <label for="DOJ"><strong>DOJ</strong></label>
-    <input type="text" placeholder="DOJ" name="DOJ" required>
-    <label for="t_no"><strong>t_no</strong></label>
-    <input type="text" placeholder="t_no" name="t_no" required>
+    <input type="text" placeholder="dd-mm-yyyy" name="DOJ" required>
+    <label for="t_no"><strong>Number of passengers</strong></label>
+    <input type="text" placeholder="Number" name="t_no" required>
     <label for="coach_type"><strong>coach_type</strong></label>
-    <input type="text" placeholder="coach_type" name="coach_type" required>
+    <input type="text" placeholder="A/S" name="coach_type" required>
     <div style = "font-size:14px; color:#cc0000; margin-top:10px"></div>
   </div>
   <button type="submit" value="submit" onclick="clear()">Next</button>

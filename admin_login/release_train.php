@@ -87,14 +87,14 @@
   </ul>
 </nav>
 <form method="post">
-  <h1>Admin Login</h1>
+  <h1>Release train</h1>
   <div class="formcontainer">
   <div class="container">
   <span style="padding-bottom:2000px"></span>
     <label for="train_no"><strong>train_no</strong></label>
     <input type="text" placeholder="train_no" name="train_no" required>
     <label for="DOJ"><strong>DOJ</strong></label>
-    <input type="text" placeholder="DOJ" name="DOJ" required>
+    <input type="text" placeholder="dd-mm-yyyy" name="DOJ" required>
     <label for="sleeper_seats_capacity"><strong>sleeper_seats_capacity</strong></label>
     <input type="text" placeholder="sleeper_seats_capacity" name="sleeper_seats_capacity" required>
     <label for="AC_seats_capacity"><strong>AC_seats_capacity</strong></label>
@@ -110,13 +110,8 @@
       document.getElementById('coaches_capacity')='';
     }
   </script>
-<button onclick="goBack()">Go Back</button>
+<button onclick="window.location.href='welcome.php">Go Back</button>
 </div>
-<script>
-function goBack() {
-  window.history.back();
-}
-</script>
 </form>
 <?php
 function checkIsAValidDate($myDateString){

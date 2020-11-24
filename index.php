@@ -24,7 +24,7 @@
         <a class="nav-link" href="./agent_login/agent_login.php">Agent Login</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" href="#">Agent Registration</a>
+        <a class="nav-link" href="./agent_login/agent_registration.php">Agent Registration</a>
       </li>
     </ul>
   </nav>

@@ -1,6 +1,16 @@
 <?php
    include('session.php');
-   $_SESSION['v']=1;
+   $_SESSION['names']=array();
+   $_SESSION['DOBS']=array();
+   $_SESSION['genders']=array();
+   $_SESSION['pids']=array();
+   for ($i=1; $i <=$_SESSION['t_no'] ; $i++) {
+     // code...
+     array_push($_SESSION['names'],$_SESSION['name'.$i]);
+     array_push($_SESSION['DOBS'],$_SESSION['DOB'.$i]);
+     array_push($_SESSION['genders'],$_SESSION['gender'.$i]);
+     array_push($_SESSION['pids'],$_SESSION['pid'.$i]);
+   }
 ?>
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
@@ -86,34 +96,42 @@
 <script type="text/javascript">
 document.body.onload = addElement;
   function addElement() {
+    var names=<?php echo json_encode($_SESSION['names']);?>;
+    var DOBS=<?php echo json_encode($_SESSION['DOBS']);?>;
+    var genders=<?php echo json_encode($_SESSION['genders']);?>;
+    var pids=<?php echo json_encode($_SESSION['pids']);?>;
 // Adds an element to the document
   // console.log($_SESSION['t_no']);
   var p = document.getElementById('i_form');
   var t_no = '<?php echo $_SESSION["t_no"]; ?>';
+  var comman=document.createElement('div');
+  comman.innerHTML=`<label><strong>PNR:- </strong><?php echo $_SESSION['pnr']?><br>
+<label><strong>train_no:- </strong><?php echo $_SESSION['train_no']?><br>
+<label><strong>coach_type:- </strong><?php echo $_SESSION['coach_type']?><br>
+<label><strong>DOJ:- </strong><?php echo $_SESSION['DOJ']?><br>
+<label><strong>Number of passengers:- </strong><?php echo $_SESSION['t_no']?><br>
+<label><strong>Booking agent_id:- </strong><?php echo $_SESSION['agent_id']?><br>
+  `;
+  p.appendChild(comman);
   for(var i=1;i<=t_no;i++){
     var newheading=document.createElement('h3');
     var newdivision=document.createElement('div');
     // var newElement = document.createElement('button');
     var linebreak=document.createElement('br');
-    newheading.innerHTML='Person '+String(i)+':';
+    newheading.innerHTML='Passenger '+String(i)+':';
     /* newheading.setAttribute('id', 'head'+String(i)); */
     newdivision.innerHTML=`<div class='formcontainer'>
     <div class='container'>
-    <label for='name'><strong>name</strong></label>
-    <input type='text' placeholder='name' name='name${i}' required>
-    <label for='DOB'><strong>DOB</strong></label>
-    <input type='text' placeholder='DOB' name='DOB${i}' required>
-    <label for='gender'><strong>gender</strong></label>
-    <input type='text' placeholder='gender' name='gender${i}' required>
+    <label for='name'><strong>name:- </strong>${names[i-1]}</label><br>
+    <label for='pid'><strong>P_id:- </strong>${pids[i-1]}</label><br>
+    <label for='DOB'><strong>DOB:- </strong></label>${DOBS[i-1]}<br>
+    <label for='gender'><strong>Gender:- </strong></label>${genders[i-1]}<br>
     </div>`;
     // console.log(newdivision.innerHTML);
     p.appendChild(newheading);
     p.appendChild(newdivision);
     p.appendChild(linebreak);
   }
-  var submit_button=document.createElement('button');
-  submit_button.innerHTML="<button type='submit' value='submit' onclick='clear()'>Book ticket</button>";
-  p.appendChild(submit_button);
   }
   function clear(){
     document.getElementById('train_no')='';
@@ -124,7 +142,7 @@ document.body.onload = addElement;
 </script>
 
 </form>
-<button type='' value='back' onclick="window.location.href='number_of_tickets.php'">Back</button>
+<button type='' value='back' onclick="window.location.href='welcome.php'">Back</button>
 </div>
 <?php
 if($_SERVER["REQUEST_METHOD"] == "POST"){
@@ -138,11 +156,7 @@ $result = pg_query_params('Select book_pnr($1, $2, $3, $4,$5);',array(
         or die('Unable to CALL stored procedure: ' . pg_last_error());
 $pnr=pg_fetch_row($result);
 // echo $pnr[0].'\n';
-$_SESSION['pnr']=$pnr[0];
 for ($i=1; $i <=$_SESSION['t_no']; $i++) {
-  $_SESSION["name".$i]=$_POST["name".$i];
-  $_SESSION["DOB".$i]=$_POST["DOB".$i];
-  $_SESSION["gender".$i]=$_POST["gender".$i];
   $result = pg_query_params('Select add_psngr($1, $2, $3);',array(
     $_POST["name".$i],
     $_POST["DOB".$i],
@@ -151,7 +165,6 @@ for ($i=1; $i <=$_SESSION['t_no']; $i++) {
           or die('Unable to CALL stored procedure: ' . pg_last_error());
   $pid=pg_fetch_row($result);
   // echo $pid[0];
-  $_SESSION['pid'.$i]=$pid[0];
   $result = pg_query_params('Select book_ticket($1, $2, $3,$4,$5);',array(
     $pid[0],
     $pnr[0],
@@ -161,7 +174,6 @@ for ($i=1; $i <=$_SESSION['t_no']; $i++) {
   ))
           or die('Unable to CALL stored procedure: ' . pg_last_error());
 }
-  header("location: ticket_summary.php");
 }
 ?>
 </body>
