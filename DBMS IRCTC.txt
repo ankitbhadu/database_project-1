@@ -1,0 +1,1000 @@
+﻿TABLE CREATION:
+
+
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+
+CREATE TABLE Passenger (
+   P_ID uuid NOT NULL,
+  Name VARCHAR(50) NOT NULL,
+  DOB DATE NOT NULL,
+  Gender CHAR(1) NOT NULL,
+  PRIMARY KEY (P_ID)
+);
+
+
+
+
+CREATE TABLE Train (
+  Train_No CHAR(5) NOT NULL,
+  Source_ID CHAR(5) NOT NULL,
+  Destination_ID CHAR(5) NOT NULL,
+  Coaches_capacity INTEGER NOT NULL,
+  PRIMARY KEY (Train_No)
+Foreign Key (source_ID) references station_data(station_ID),
+Foreign Key (destination_ID) references station_data(destination_ID),
+);
+CREATE TABLE Admin (
+  Admin_ID CHAR(10) NOT NULL,
+  Password VARCHAR(20) NOT NULL,
+  PRIMARY KEY (Admin_ID)
+);
+CREATE TABLE agent (
+  agent_ID CHAR(10) NOT NULL,
+  Password VARCHAR(20) NOT NULL,
+  PRIMARY KEY (agent_ID)
+
+
+);
+
+
+CREATE TABLE Released_Trains (
+  Train_No CHAR(5) NOT NULL,
+  DOJ DATE NOT NULL,
+  Admin_ID CHAR(10) NOT NULL,
+  Sleeper_seats_capacity INTEGER NOT NULL,
+  AC_seats_capacity INTEGER NOT NULL,
+  Sleeper_remaining INTEGER NOT NULL,
+  AC_remaining INTEGER NOT NULL,
+  PRIMARY KEY (Train_No, DOJ),
+  FOREIGN KEY(Train_No) REFERENCES Train(Train_No),
+
+
+FOREIGN KEY(Admin_ID) REFERENCES Admin(Admin_ID)
+);
+
+
+
+
+CREATE TABLE Booking_agent (
+  Agent_ID CHAR(10) NOT NULL,
+  Name VARCHAR(50) NOT NULL,
+  CC_No CHAR(16) NOT NULL,
+  Address VARCHAR(100) NOT NULL,
+  PRIMARY KEY (Agent_ID),
+Foreign Key(agent_ID) references agent(agent_ID)
+
+
+);
+
+
+
+
+CREATE TABLE PNR (
+  PNR uuid NOT NULL,
+  Train_No CHAR(5) NOT NULL,
+  DOJ DATE NOT NULL,
+  Agent_ID CHAR(10) NOT NULL,
+  Booking_date DATE NOT NULL,
+  Coach_type CHAR(1) NOT NULL,
+ Num_passenger integer not null,
+  PRIMARY KEY (PNR),
+FOREIGN KEY(Agent_ID) REFERENCES Booking_agent(Agent_ID),
+FOREIGN KEY(Train_No) REFERENCES Train(Train_No)
+);
+
+
+CREATE TABLE Ticket (
+  PNR uuid NOT NULL ,
+  P_ID uuid NOT NULL,
+  Seat_No INT NOT NULL,
+  Coach_No CHAR(3) NOT NULL,
+  PRIMARY KEY (PNR, P_ID),
+FOREIGN KEY (P_ID) REFERENCES Passenger(P_ID),
+FOREIGN KEY (PNR) REFERENCES PNR(PNR)
+);
+CREATE TABLE Station_data (
+  Station_ID CHAR(5) NOT NULL,
+  Name VARCHAR(50) NOT NULL,
+  PRIMARY KEY (Station_ID)
+);
+
+
+CREATE TABLE Coach_info (
+  Coach_type CHAR(1) NOT NULL,
+  Seats INTEGER NOT NULL,
+  Division INTEGER NOT NULL,
+  PRIMARY KEY (Coach_type)
+);
+
+
+
+
+
+
+
+
+
+
+Stored procedures:
+1.For inserting train:
+create or replace procedure Insert_Train(char(5), char(5), char(5),Integer)
+language 'plpgsql'
+As $$
+Begin
+Insert into Train(train_no,source_id,destination_id,coaches_capacity)values ($1,$2,$3,$4);
+End;
+$$;
+
+
+2.For adding to enabled train:
+TODO: date datatype use,if time left capacity of bogey check.
+
+
+create or replace Function Release_Train(T_No CHAR(5),DOJ DATE,Admin_ID CHAR(10) ,Sleeper_seats_capacity INTEGER ,AC_seats_capacity INTEGER ,
+ Sleeper_remaining INTEGER,AC_remaining INTEGER) returns integer as $$ 
+ declare check_count int;
+Declare todays_date DATE;
+Begin
+Select into todays_date  CURRENT_DATE;
+check_count:=0;
+select into check_count Train.Train_No from Train where 
+Train.Train_no=T_No;
+if check_count=0 then return 0;
+end if;
+If  DOJ < todays_date - INTERVAL '5 day' then
+Return 0;
+End if;
+if check_count>0 then 
+Insert into Released_Trains(Train_No,DOJ ,Admin_ID ,Sleeper_seats_capacity ,
+  AC_seats_capacity  ,Sleeper_remaining ,AC_remaining)
+values
+(T_No, DOJ ,  Admin_ID,Sleeper_seats_capacity,AC_seats_capacity,Sleeper_remaining,
+AC_remaining );
+return 1;
+end if;
+
+
+End;
+$$ LANGUAGE 'plpgsql';
+
+
+For checking:
+select release_train('12345','12/11/2000','1234567890',78,78,70,70) as released;
+
+
+select * from released_trains;
+
+
+
+
+
+
+3.
+Check seat Availability:
+create or replace function check_availability(T_No CHAR(5), Coach_pref CHAR(1), Date_journey DATE,req_seats Integer)
+returns int as $$
+declare counter int;
+Begin
+counter:=0;
+if Coach_pref LIKE 'A%' then
+select into counter Released_trains.ac_remaining from released_trains where released_trains.train_no=(T_no)::CHAR(5) and released_trains.doj=(Date_journey)::DATE;
+if counter>=(req_seats)::integer then
+return 1;
+end if;
+if counter<(req_seats)::integer then
+return 0;
+end if;
+end if;
+if Coach_pref LIKE 'S%' then
+
+
+select into counter Released_trains.sleeper_remaining from released_trains where released_trains.train_no=(T_no)::Char(5) and released_trains.doj=(date_journey)::DATE;
+if counter>=(req_seats)::integer then
+return 1;
+end if;
+if counter<(req_seats)::integer then
+return 0;
+end if;
+end if;
+return 0;
+end;
+$$ LANGUAGE plpgsql;
+
+
+select check_availability('12345','A','2020/11/20',80) as ans;
+
+
+
+
+4. Booking a ticket stored procedure:
+
+
+First, call check avail function from PHP;
+
+
+Next call book pnr function:
+create or replace function book_pnr(T_No CHAR(5), Coach_pref CHAR(1), Date_journey DATE,req_seats Integer,Agent_ID CHAR(10))
+returns uuid as $$
+declare pnr uuid;
+declare curr_date DATE;
+Begin
+select current_date into curr_date;
+pnr:=uuid_generate_v4 ();
+Insert into pnr( PNR,Train_No,DOJ ,Agent_ID ,Booking_date,
+  Coach_type,Num_passenger) values(pnr,T_No,Date_journey,Agent_ID,curr_date,coach_pref,req_seats);
+  return pnr;
+end;
+$$ LANGUAGE plpgsql;
+
+
+Next, we call add psngr from PHP:
+create or replace function add_psngr(pname varCHAR(50), DOB DATE , gender CHAR(1))
+returns uuid as $$
+declare pid uuid;
+Begin
+pid:=uuid_generate_v4 ();
+Insert into passenger(p_id,Name,DOB,Gender)
+  values(pid,pname,DOB,gender);
+  
+  return pid;
+end;
+$$ LANGUAGE plpgsql;
+
+
+Finally we book ticket:
+create or replace function book_ticket(pid UUID, pnr UUID, t_No CHAR(10),Date_journey DATE, coach_type CHAR(1) )
+returns int as $$
+declare cap int;
+declare counter int;
+declare coach_seats int;
+declare coach_divisions int;
+declare seat_No int;
+declare coach_no int;
+declare coach_id char(3);
+Begin
+if Coach_type LIKE 'A%' then
+select into counter,cap Released_trains.ac_remaining,released_trains.ac_seats_capacity from released_trains where released_trains.train_no=(T_no)::CHAR(5) and released_trains.doj=(Date_journey)::DATE;
+select into coach_seats,coach_divisions Coach_info.Seats,Coach_info.division from coach_info where coach_info.coach_type = 'A' ;
+if counter%coach_seats = 0 then
+coach_no=((cap-counter)/coach_seats)+1;
+end if;
+if counter%coach_seats<>0 then
+coach_no=((cap-counter)/coach_seats)+1;
+end if;
+
+
+seat_no = ((cap-counter)%coach_seats)+1;
+select concat(coach_type,coach_no) into coach_id;
+
+
+Insert into ticket(PNR,P_ID,SEAT_NO,COACH_NO) values (pnr,pid,seat_NO,coach_id );
+return 1;
+end if;
+
+
+
+
+if Coach_type LIKE 'S%' then
+select into counter,cap Released_trains.sleeper_remaining,released_trains.sleeper_seats_capacity from released_trains where released_trains.train_no=(T_no)::CHAR(5) and released_trains.doj=(Date_journey)::DATE;
+select into coach_seats,coach_divisions Coach_info.Seats,Coach_info.division from coach_info where coach_info.coach_type = 'S' ;
+if counter%coach_seats = 0 then
+coach_no=((cap-counter)/coach_seats)+1;
+end if;
+if counter%coach_seats<>0 then
+coach_no=((cap-counter)/coach_seats)+1;
+end if;
+
+
+seat_no = ((cap-counter)%coach_seats)+1;
+select concat(coach_type,coach_no) into coach_id;
+
+
+Insert into ticket(PNR,P_ID,SEAT_NO,COACH_NO) values (pnr,pid,seat_no,coach_id );
+return 1;
+end if;
+return 0;
+end;
+$$ LANGUAGE plpgsql;
+
+
+
+
+Database insertion commands
+Insert into admin values(‘root’,’simple’);
+
+
+
+
+Archive PNR:
+Archives both old pnr and ticket table records when insert into pnr happens.Definition of old: Todays date is 1 day ahead of DOJ.
+CREATE TABLE Archived_PNR (
+   PNR uuid ,
+  Train_No CHAR(5) NOT NULL,
+  DOJ DATE NOT NULL,
+  Agent_ID CHAR(10) NOT NULL,
+  Booking_date DATE NOT NULL,
+  Coach_type CHAR(1) NOT NULL,
+  Num_passenger integer not null,
+  PRIMARY KEY (PNR)
+);
+CREATE TABLE Archived_Ticket (
+  PNR uuid NOT NULL ,
+  P_ID uuid NOT NULL,
+  Seat_No INT NOT NULL,
+  Coach_No CHAR(3) NOT NULL
+);
+
+
+CREATE TABLE Archived_Released_Trains (
+  Train_No CHAR(5) NOT NULL,
+  DOJ DATE NOT NULL,
+  Admin_ID CHAR(10) NOT NULL,
+  Sleeper_seats_capacity INTEGER NOT NULL,
+  AC_seats_capacity INTEGER NOT NULL,
+  Sleeper_remaining INTEGER NOT NULL,
+  AC_remaining INTEGER NOT NULL,
+);
+CREATE OR REplace FUNCTION archive_pnr() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  row_count int;
+  todays_date DATE;
+BEGIN
+  select into todays_date CURRENT_DATE;
+  
+  insert into archived_ticket(pnr,p_id,seat_no,coach_no)
+  select ticket.pnr,ticket.p_id,ticket.seat_no,ticket.coach_no
+  from ticket
+  where ticket.pnr in ( select pnr.pnr from pnr where DOJ < todays_date - INTERVAL '4 day');
+  
+  delete from ticket where pnr in ( select pnr.pnr from pnr where DOJ < todays_date - INTERVAL '4 day');
+   IF found THEN
+    GET DIAGNOSTICS row_count = ROW_COUNT;
+    RAISE NOTICE 'Archived % row(s) FROM ticket table', row_count;
+  END IF;
+  row_count=0;
+  insert into Archived_pnr(pnr,train_no,doj,agent_id,booking_date,coach_type,num_passenger)
+  select pnr.pnr, pnr.train_no,pnr.doj,pnr.agent_id,pnr.booking_date,pnr.coach_type,pnr.num_passenger
+  from pnr
+  where DOJ < todays_date - INTERVAL '4 day';
+  
+  DELETE FROM PNR WHERE DOJ < todays_date - INTERVAL '4 day';
+  IF found THEN
+    GET DIAGNOSTICS row_count = ROW_COUNT;
+    RAISE NOTICE 'Archived % row(s) FROM PNR table', row_count;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+
+
+
+
+
+CREATE TRIGGER archive_old_pnr
+    AFTER INSERT ON PNR
+    EXECUTE PROCEDURE archive_pnr();
+
+
+
+
+
+
+
+
+
+
+CREATE OR REplace FUNCTION archive_trains() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  row_count int;
+  todays_date DATE;
+BEGIN
+  select into todays_date CURRENT_DATE;
+  
+  insert into archived_released_trains(Train_No,DOJ,Admin_ID,Sleeper_seats_capacity,
+  AC_seats_capacity ,
+  Sleeper_remaining,
+  AC_remaining,
+)
+Select train_no, doj, admin_id, sleeper_seats_capacity, AC_seats_capacity, sleeper_remaining, ac_remaining from released_trains where DOJ < todays_date - INTERVAL '4 day';
+  
+  delete from released_trains where train_no,doj in ( select train_no,doj from released_trains where DOJ < todays_date - INTERVAL '4 day');
+   IF found THEN
+    GET DIAGNOSTICS row_count = ROW_COUNT;
+    RAISE NOTICE 'Archived % row(s) FROM released_trains table', row_count;
+  END IF;
+    RETURN NULL;
+END;
+$$;
+
+
+
+
+
+
+CREATE TRIGGER archive_old_trains
+    AFTER INSERT ON Released_trains
+    EXECUTE PROCEDURE archive_trains();
+
+
+
+
+
+
+
+
+
+
+
+
+Trigger to update seats nd check pnr info before insertion:
+CREATE OR Replace FUNCTION ticket_check_and_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+temp_pnr uuid;
+temp_record record;
+BEGIN
+temp_pnr:=new.pnr;
+for temp_record in select train_no,DOJ from pnr where pnr.pnr=new.pnr
+loop
+if new.coach_no LIKE 'A%' then
+        update released_trains SET ac_remaining=ac_remaining-1
+        where train_no=temp_record.train_no and temp_record.doj=doj;
+end if;
+if new.coach_no LIKE 'S%' then
+        UPDATE released_trains SET sleeper_remaining=sleeper_remaining-1
+        where train_no=temp_record.train_no and temp_record.doj=doj;
+end if;
+end loop;
+RETURN NULL;
+END;
+$$;
+
+
+
+
+CREATE TRIGGER update_seats  After INSERT ON Ticket
+    FOR EACH ROW EXECUTE PROCEDURE ticket_check_and_update();
+
+
+
+
+
+
+Seat Layout:
+
+
+insert into coach_info values ('A',18,6);
+insert into coach_info values ('S',24,8);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sample queries:
+Train insertion:
+
+
+Train releases:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+
+CREATE TABLE Passenger (
+   P_ID uuid NOT NULL,
+  Name VARCHAR(50) NOT NULL,
+  DOB DATE NOT NULL,
+  Gender CHAR(1) NOT NULL,
+  PRIMARY KEY (P_ID)
+);
+CREATE TABLE Station_data (
+  Station_ID CHAR(5) NOT NULL,
+  Name VARCHAR(50) NOT NULL,
+  PRIMARY KEY (Station_ID)
+);
+
+
+
+
+CREATE TABLE Train (
+  Train_No CHAR(5) NOT NULL,
+  Source_ID CHAR(5) NOT NULL,
+  Destination_ID CHAR(5) NOT NULL,
+  Coaches_capacity INTEGER NOT NULL,
+  PRIMARY KEY (Train_No),
+Foreign Key (source_ID) references station_data(station_ID),
+Foreign Key (destination_ID) references station_data(station_ID)
+);
+CREATE TABLE Admin (
+  Admin_ID CHAR(10) NOT NULL,
+  Password VARCHAR(20) NOT NULL,
+  PRIMARY KEY (Admin_ID)
+);
+CREATE TABLE agent (
+  agent_ID CHAR(10) NOT NULL,
+  Password VARCHAR(20) NOT NULL,
+  PRIMARY KEY (agent_ID)
+
+
+);
+
+
+
+
+CREATE TABLE Released_Trains (
+  Train_No CHAR(5) NOT NULL,
+  DOJ DATE NOT NULL,
+  Admin_ID CHAR(10) NOT NULL,
+  Sleeper_seats_capacity INTEGER NOT NULL,
+  AC_seats_capacity INTEGER NOT NULL,
+  Sleeper_remaining INTEGER NOT NULL,
+  AC_remaining INTEGER NOT NULL,
+  PRIMARY KEY (Train_No, DOJ),
+  FOREIGN KEY(Train_No) REFERENCES Train(Train_No),
+FOREIGN KEY(Admin_ID) REFERENCES Admin(Admin_ID)
+);
+
+
+
+
+CREATE TABLE Booking_agent (
+  Agent_ID CHAR(10) NOT NULL,
+  Name VARCHAR(50) NOT NULL,
+  CC_No CHAR(16) NOT NULL,
+  Address VARCHAR(100) NOT NULL,
+  PRIMARY KEY (Agent_ID),
+Foreign Key(agent_ID) references agent(agent_ID)
+
+
+);
+
+
+
+
+CREATE TABLE PNR (
+  PNR uuid NOT NULL,
+  Train_No CHAR(5) NOT NULL,
+  DOJ DATE NOT NULL,
+  Agent_ID CHAR(10) NOT NULL,
+  Booking_date DATE NOT NULL,
+  Coach_type CHAR(1) NOT NULL,
+ Num_passenger integer not null,
+  PRIMARY KEY (PNR),
+FOREIGN KEY(Agent_ID) REFERENCES Booking_agent(Agent_ID),
+FOREIGN KEY(Train_No) REFERENCES Train(Train_No)
+);
+
+
+CREATE TABLE Ticket (
+  PNR uuid NOT NULL ,
+  P_ID uuid NOT NULL,
+  Seat_No INT NOT NULL,
+  Coach_No CHAR(3) NOT NULL,
+  PRIMARY KEY (PNR, P_ID),
+FOREIGN KEY (P_ID) REFERENCES Passenger(P_ID),
+FOREIGN KEY (PNR) REFERENCES PNR(PNR)
+);
+
+
+CREATE TABLE Coach_info (
+  Coach_type CHAR(1) NOT NULL,
+  Seats INTEGER NOT NULL,
+  Division INTEGER NOT NULL,
+  PRIMARY KEY (Coach_type)
+);
+
+
+create or replace procedure Insert_Train(char(5), char(5), char(5),Integer)
+language 'plpgsql'
+As $$
+Begin
+Insert into Train(train_no,source_id,destination_id,coaches_capacity)values ($1,$2,$3,$4);
+End;
+$$;
+
+
+
+
+create or replace Function Release_Train(T_No CHAR(5),DOJ DATE,Admin_ID CHAR(10) ,Sleeper_seats_capacity INTEGER ,AC_seats_capacity INTEGER ,
+ Sleeper_remaining INTEGER,AC_remaining INTEGER) returns integer as $$ 
+ declare check_count int;
+Declare todays_date DATE;
+Begin
+Select into todays_date  CURRENT_DATE;
+check_count:=0;
+select into check_count Train.Train_No from Train where 
+Train.Train_no=T_No;
+if check_count=0 then return 0;
+end if;
+If  DOJ < todays_date - INTERVAL '5 day' then
+Return 0;
+End if;
+if check_count>0 then 
+Insert into Released_Trains(Train_No,DOJ ,Admin_ID ,Sleeper_seats_capacity ,
+  AC_seats_capacity  ,Sleeper_remaining ,AC_remaining)
+values
+(T_No, DOJ ,  Admin_ID,Sleeper_seats_capacity,AC_seats_capacity,Sleeper_remaining,
+AC_remaining );
+return 1;
+end if;
+
+
+End;
+$$ LANGUAGE 'plpgsql';
+
+
+create or replace function check_availability(T_No CHAR(5), Coach_pref CHAR(1), Date_journey DATE,req_seats Integer)
+returns int as $$
+declare counter int;
+Begin
+counter:=0;
+if Coach_pref LIKE 'A%' then
+select into counter Released_trains.ac_remaining from released_trains where released_trains.train_no=(T_no)::CHAR(5) and released_trains.doj=(Date_journey)::DATE;
+if counter>=(req_seats)::integer then
+return 1;
+end if;
+if counter<(req_seats)::integer then
+return 0;
+end if;
+end if;
+if Coach_pref LIKE 'S%' then
+
+
+select into counter Released_trains.sleeper_remaining from released_trains where released_trains.train_no=(T_no)::Char(5) and released_trains.doj=(date_journey)::DATE;
+if counter>=(req_seats)::integer then
+return 1;
+end if;
+if counter<(req_seats)::integer then
+return 0;
+end if;
+end if;
+return 0;
+end;
+$$ LANGUAGE plpgsql;
+
+
+
+
+create or replace function book_pnr(T_No CHAR(5), Coach_pref CHAR(1), Date_journey DATE,req_seats Integer,Agent_ID CHAR(10))
+returns uuid as $$
+declare pnr uuid;
+declare curr_date DATE;
+Begin
+select current_date into curr_date;
+pnr:=uuid_generate_v4 ();
+Insert into pnr( PNR,Train_No,DOJ ,Agent_ID ,Booking_date,
+  Coach_type,Num_passenger) values(pnr,T_No,Date_journey,Agent_ID,curr_date,coach_pref,req_seats);
+  return pnr;
+end;
+$$ LANGUAGE plpgsql;
+
+
+create or replace function add_psngr(pname varCHAR(50), DOB DATE , gender CHAR(1))
+returns uuid as $$
+declare pid uuid;
+Begin
+pid:=uuid_generate_v4 ();
+Insert into passenger(p_id,Name,DOB,Gender)
+  values(pid,pname,DOB,gender);
+  
+  return pid;
+end;
+$$ LANGUAGE plpgsql;
+
+
+create or replace function book_ticket(pid UUID, pnr UUID, t_No CHAR(10),Date_journey DATE, coach_type CHAR(1) )
+returns int as $$
+declare cap int;
+declare counter int;
+declare coach_seats int;
+declare coach_divisions int;
+declare seat_No int;
+declare coach_no int;
+declare coach_id char(3);
+Begin
+if Coach_type LIKE 'A%' then
+select into counter,cap Released_trains.ac_remaining,released_trains.ac_seats_capacity from released_trains where released_trains.train_no=(T_no)::CHAR(5) and released_trains.doj=(Date_journey)::DATE;
+select into coach_seats,coach_divisions Coach_info.Seats,Coach_info.division from coach_info where coach_info.coach_type = 'A' ;
+if counter%coach_seats = 0 then
+coach_no=((cap-counter)/coach_seats);
+end if;
+if counter%coach_seats<>0 then
+coach_no=((cap-counter)/coach_seats)+1;
+end if;
+
+
+seat_no = ((cap-counter)%coach_seats)+1;
+select concat(coach_type,coach_no) into coach_id;
+
+
+Insert into ticket(PNR,P_ID,SEAT_NO,COACH_NO) values (pnr,pid,seat_NO,coach_id );
+return 1;
+end if;
+
+
+
+
+if Coach_type LIKE 'S%' then
+select into counter,cap Released_trains.sleeper_remaining,released_trains.sleeper_seats_capacity from released_trains where released_trains.train_no=(T_no)::CHAR(5) and released_trains.doj=(Date_journey)::DATE;
+select into coach_seats,coach_divisions Coach_info.Seats,Coach_info.division from coach_info where coach_info.coach_type = 'S' ;
+if counter%coach_seats = 0 then
+coach_no=((cap-counter)/coach_seats);
+end if;
+if counter%coach_seats<>0 then
+coach_no=((cap-counter)/coach_seats)+1;
+end if;
+
+
+seat_no = ((cap-counter)%coach_seats)+1;
+select concat(coach_type,coach_no) into coach_id;
+
+
+Insert into ticket(PNR,P_ID,SEAT_NO,COACH_NO) values (pnr,pid,seat_no,coach_id );
+return 1;
+end if;
+return 0;
+end;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+
+
+
+CREATE TABLE Archived_PNR (
+   PNR uuid ,
+  Train_No CHAR(5) NOT NULL,
+  DOJ DATE NOT NULL,
+  Agent_ID CHAR(10) NOT NULL,
+  Booking_date DATE NOT NULL,
+  Coach_type CHAR(1) NOT NULL,
+  Num_passenger integer not null,
+  PRIMARY KEY (PNR)
+);
+CREATE TABLE Archived_Ticket (
+  PNR uuid NOT NULL ,
+  P_ID uuid NOT NULL,
+  Seat_No INT NOT NULL,
+  Coach_No CHAR(3) NOT NULL
+);
+
+
+CREATE TABLE Archived_Released_Trains (
+  Train_No CHAR(5) NOT NULL,
+  DOJ DATE NOT NULL,
+  Admin_ID CHAR(10) NOT NULL,
+  Sleeper_seats_capacity INTEGER NOT NULL,
+  AC_seats_capacity INTEGER NOT NULL,
+  Sleeper_remaining INTEGER NOT NULL,
+  AC_remaining INTEGER NOT NULL
+);
+CREATE OR REplace FUNCTION archive_pnr() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  row_count int;
+  todays_date DATE;
+BEGIN
+  select into todays_date CURRENT_DATE;
+  
+  insert into archived_ticket(pnr,p_id,seat_no,coach_no)
+  select ticket.pnr,ticket.p_id,ticket.seat_no,ticket.coach_no
+  from ticket
+  where ticket.pnr in ( select pnr.pnr from pnr where DOJ < todays_date - INTERVAL '4 day');
+  
+  delete from ticket where pnr in ( select pnr.pnr from pnr where DOJ < todays_date - INTERVAL '4 day');
+   IF found THEN
+    GET DIAGNOSTICS row_count = ROW_COUNT;
+    RAISE NOTICE 'Archived % row(s) FROM ticket table', row_count;
+  END IF;
+  row_count=0;
+  insert into Archived_pnr(pnr,train_no,doj,agent_id,booking_date,coach_type,num_passenger)
+  select pnr.pnr, pnr.train_no,pnr.doj,pnr.agent_id,pnr.booking_date,pnr.coach_type,pnr.num_passenger
+  from pnr
+  where DOJ < todays_date - INTERVAL '4 day';
+  
+  DELETE FROM PNR WHERE DOJ < todays_date - INTERVAL '4 day';
+  IF found THEN
+    GET DIAGNOSTICS row_count = ROW_COUNT;
+    RAISE NOTICE 'Archived % row(s) FROM PNR table', row_count;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+
+
+
+
+
+CREATE TRIGGER archive_old_pnr
+    AFTER INSERT ON PNR
+    EXECUTE PROCEDURE archive_pnr();
+
+
+CREATE OR REplace FUNCTION archive_trains() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  row_count int;
+  todays_date DATE;
+BEGIN
+  select into todays_date CURRENT_DATE;
+  
+  insert into archived_released_trains(Train_No,DOJ,Admin_ID,Sleeper_seats_capacity,
+  AC_seats_capacity ,
+  Sleeper_remaining,
+  AC_remaining
+)
+Select train_no, doj, admin_id, sleeper_seats_capacity, AC_seats_capacity, sleeper_remaining, ac_remaining from released_trains where DOJ < todays_date - INTERVAL '4 day';
+  
+  delete from released_trains where (train_no,doj) in ( select train_no,doj from released_trains where DOJ < todays_date - INTERVAL '4 day');
+   IF found THEN
+    GET DIAGNOSTICS row_count = ROW_COUNT;
+    RAISE NOTICE 'Archived % row(s) FROM released_trains table', row_count;
+  END IF;
+    RETURN NULL;
+END;
+$$;
+
+
+
+
+
+
+CREATE TRIGGER archive_old_trains
+    AFTER INSERT ON Released_trains
+    EXECUTE PROCEDURE archive_trains();
+
+
+CREATE OR Replace FUNCTION ticket_check_and_update() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+temp_pnr uuid;
+temp_record record;
+BEGIN
+temp_pnr:=new.pnr;
+for temp_record in select train_no,DOJ from pnr where pnr.pnr=new.pnr
+loop
+if new.coach_no LIKE 'A%' then
+        update released_trains SET ac_remaining=ac_remaining-1
+        where train_no=temp_record.train_no and temp_record.doj=doj;
+end if;
+if new.coach_no LIKE 'S%' then
+        UPDATE released_trains SET sleeper_remaining=sleeper_remaining-1
+        where train_no=temp_record.train_no and temp_record.doj=doj;
+end if;
+end loop;
+RETURN NULL;
+END;
+$$;
+
+
+
+
+CREATE TRIGGER update_seats  After INSERT ON Ticket
+    FOR EACH ROW EXECUTE PROCEDURE ticket_check_and_update();
+
+
+
+
+insert into coach_info values ('A',18,6);
+insert into coach_info values ('S',24,8);
+Insert into admin values('root','simple');
+Insert into agent values('agent','simple');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Sample queries:
+Train insertion:
+
+
+Train releases:
